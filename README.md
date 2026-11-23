@@ -9,7 +9,7 @@ The released checkpoint was trained on Google Cloud TPU. We have also verified
 that the implementation can train on NVIDIA GPUs, but have not performed a full
 GPU training run.
 
-[Installation](#installation) · [Inference](#inference) · [License](#license)
+[Installation](#installation) · [Inference](#inference) · [Training](#training) · [License](#license)
 
 ## Installation
 
@@ -83,6 +83,77 @@ actions = policy.infer_action(canvas, qpos, context, context_mask)
 ```
 
 `infer_action` returns **absolute joint targets**.
+
+## Training
+
+To train on RoboTwin, prepare the episodes and instruction embeddings, then
+initialize the action expert from the Wan2.2 video weights. The commands below
+reuse the model and dataset variables defined in [Installation](#installation).
+
+### Prepare training inputs
+
+Download and unpack the RoboTwin episodes, then convert them to the training
+format:
+
+```bash
+hf download "$DATASET" --include 'robotwin2.0.tar.gz.part-*' --repo-type dataset \
+  --revision "$DATA_REV" --local-dir data/robotwin
+cat data/robotwin/robotwin2.0.tar.gz.part-* | tar -xzf - -C data/robotwin
+
+uv run --extra dataset python tools/prepare_robotwin.py \
+  --source data/robotwin/robotwin2.0 --output data/robotwin/twp
+```
+
+The packer stores each episode's images, actions, and joint states in a single
+`TWP3` file. TPU workers reuse fetched episodes across training windows to reduce
+GCS requests and repeated transfers. CUDA workers read the same files from disk.
+
+Collect the instructions and precompute their text embeddings:
+
+```bash
+uv run --extra convert python tools/prepare_text_sidetable.py collect \
+  --l3 data/robotwin/twp --out data/robotwin/text
+uv run --extra convert python tools/prepare_text_sidetable.py encode \
+  --dir data/robotwin/text --device cpu
+```
+
+Download the Wan2.2 video weights and use them to initialize the action expert:
+
+```bash
+hf download "$WAN_REPO" --revision "$WAN_REV" \
+  --include 'video_dit/**' --local-dir checkpoints/wan
+uv run python tools/convert_weights.py build-action-init \
+  checkpoints/wan/video_dit checkpoints/wan/action_init \
+  --config configs/training/full.local.example.yaml
+```
+
+### Train on Cloud TPU
+
+The released checkpoint used an earlier pixel-packed dataset. The recipe below
+uses TWP3 with RGB images and aligned action and state rows.
+
+Upload the training inputs to a bucket in the TPU region. Copy the example
+recipe, then edit its `paths` and `tpu` sections to match your setup. The launcher
+uses the active `gcloud` project.
+
+```bash
+cp configs/training/full.example.yaml configs/training/full.tpu.yaml
+# Set paths and TPU settings in full.tpu.yaml.
+uv run bash scripts/launch_training.sh configs/training/full.tpu.yaml robotwin-full
+```
+
+### Train on NVIDIA GPUs
+
+We have verified that the implementation can train on NVIDIA GPUs, but have not
+performed a full GPU training run. The released checkpoint was trained on TPU.
+
+Set `training.micro_batch_size` to a multiple of the GPU count and a divisor of
+the global batch size, then launch training with the local recipe:
+
+```bash
+JAX_PLATFORMS=cuda,cpu uv run --extra cuda python -m fastwam_jax.training.train \
+  configs/training/full.local.example.yaml tpu.run_name=robotwin-full
+```
 
 ## License
 

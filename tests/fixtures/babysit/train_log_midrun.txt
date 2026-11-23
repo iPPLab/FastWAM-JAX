@@ -1,0 +1,2 @@
+[train] step 100/300, loss=0.25
+[train] step 200/300, loss=0.20
