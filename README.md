@@ -9,7 +9,54 @@ The released checkpoint was trained on Google Cloud TPU. We have also verified
 that the implementation can train on NVIDIA GPUs, but have not performed a full
 GPU training run.
 
-[Installation](#installation) · [Inference](#inference) · [Training](#training) · [License](#license)
+[Results](#results) · [Installation](#installation) · [Inference](#inference) ·
+[Training](#training) · [Citation](#citation)
+
+## Results
+
+### RoboTwin evaluation
+
+We evaluated the converted official checkpoint and the JAX-trained checkpoint
+through the RoboTwin policy adapter across all 50 tasks. Both checkpoints used
+25 matched scene seeds per task in each setting. In the randomized setting,
+paired evaluations shared the same instruction and initial state.
+
+For reference,
+[Table 1 of the Fast-WAM paper](https://arxiv.org/html/2603.16666v1#S4)
+reports results from 100 trials per task and setting.
+
+| Checkpoint                           |                Clean |           Randomized |
+| ------------------------------------ | -------------------: | -------------------: |
+| Fast-WAM paper                       |               91.88% |               91.78% |
+| Official checkpoint converted to JAX | 91.92% (1,149/1,250) | 90.40% (1,130/1,250) |
+| FastWAM-JAX, step 29,365             | 92.24% (1,153/1,250) | 91.04% (1,138/1,250) |
+
+### Training performance
+
+We trained the released checkpoint for five epochs on a Google Cloud TPU
+v6e-64 slice, using 64 chips across 16 worker VMs and a global batch size of
+1,024.
+
+Across 26,938 steady-state updates, the mean update time was **1.392 s**, measured
+from batch loading through the optimizer step. At this rate, 29,365 updates take
+approximately **11 h 21 min** of training.
+
+### Inference latency
+
+We measured latency on a single RTX 5090, timing 30 requests per mode after an
+initial request and three warm-up runs. JAX 0.11.0 and PyTorch 2.7.1 used the same
+upstream BF16 weights, a fixed synthetic RGB observation, precomputed text, and
+ten denoising steps. Measurements include VAE encoding and the transfer of
+predicted actions back to the host.
+
+| Runtime                                    | Median (ms) | p95 (ms) |
+| ------------------------------------------ | ----------: | -------: |
+| JAX JIT                                    |       74.00 |    76.10 |
+| PyTorch `torch.compile`, `max-autotune`    |       74.70 |    76.93 |
+| PyTorch `torch.compile`, `reduce-overhead` |       79.52 |    79.64 |
+| PyTorch `torch.compile`, default           |      123.56 |   124.17 |
+| PyTorch eager                              |      318.21 |   321.04 |
+| JAX JIT, autotuning disabled               |      406.92 |   408.80 |
 
 ## Installation
 
@@ -153,6 +200,27 @@ the global batch size, then launch training with the local recipe:
 ```bash
 JAX_PLATFORMS=cuda,cpu uv run --extra cuda python -m fastwam_jax.training.train \
   configs/training/full.local.example.yaml tpu.run_name=robotwin-full
+```
+
+## Citation
+
+If you find our repo helpful, please consider citing FastWAM-JAX and the original Fast-WAM paper.
+
+```bibtex
+@misc{fastwamjax2026,
+  author={{FastWAM-JAX Contributors}},
+  title={{FastWAM-JAX}},
+  year={2026},
+  howpublished={\url{https://github.com/iPPLab/FastWAM-JAX}}
+}
+
+@article{yuan2026fastwam,
+  title={Fast-WAM: Do World Action Models Need Test-time Future Imagination?},
+  author={Tianyuan Yuan and Zibin Dong and Yicheng Liu and Hang Zhao},
+  journal={arXiv preprint arXiv:2603.16666},
+  year={2026},
+  url={https://arxiv.org/abs/2603.16666}
+}
 ```
 
 ## License
