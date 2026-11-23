@@ -1,0 +1,46 @@
+# Full RoboTwin training recipe, with an example Cloud TPU configuration.
+# Change every GCS path explicitly when moving data or outputs to another owner/bucket.
+paths:
+  read:
+    video_dit_orbax: "gs://your-fastwam-bucket/assets/wan/video_dit"
+    vae_orbax: "gs://your-fastwam-bucket/assets/wan/vae"
+    action_dit_init: "gs://your-fastwam-bucket/assets/wan/action_init"
+    training_data: "gs://your-fastwam-bucket/data/robotwin/twp"
+    dataset_stats: "gs://your-fastwam-bucket/data/robotwin/dataset_stats.json"
+    text_embeddings: "gs://your-fastwam-bucket/data/robotwin/text"
+  write:
+    runs: "gs://your-fastwam-bucket/fastwam-jax/runs"
+    jax_cache: "gs://your-fastwam-bucket/fastwam-jax/jax-cache"
+    code_packages: "gs://your-fastwam-bucket/fastwam-jax/code"
+
+# Choose a zone in the same region as your bucket.
+tpu:
+  zone: "us-east1-d"
+  accelerator: "v6e-64"
+  runtime_version: "v6e-ubuntu-2404"
+
+data:
+  task_filter: null
+  action_dim: 14
+  proprio_dim: 14
+  num_output_cameras: 3
+  concat_multi_camera: robotwin
+  action_shift: 0
+  source_color_order: rgb
+
+# One action flow-time draw per sample matches the upstream implementation.
+flow:
+  tau_copies: 1
+  copy_lengths: null
+
+training:
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-2
+  num_epochs: 5
+  steps: null
+  decay_steps: null
+  global_batch_size: 1024
+  micro_batch_size: 1024
+  checkpoint:
+    full_every: 200
+    bf16_every: 2500

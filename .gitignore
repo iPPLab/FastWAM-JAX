@@ -1,0 +1,47 @@
+__pycache__/
+*.py[cod]
+.*_cache/
+.venv/
+*.egg-info/
+
+# Repository-local large assets
+/checkpoints/
+/data/
+
+# Runtime output
+/outputs/
+/logs/
+/.last_sync_hash
+
+# Generated evaluation dependencies
+/eval/third_party/*
+/eval/.venv-robotwin/
+/eval/rt_client/task_config
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/
+
+# Local training recipes; only examples are tracked
+/configs/**/*.yaml
+/configs/**/*.yml
+!/configs/**/*.example.yaml
+!/configs/**/*.example.yml
+
+# Personal notes, never committed
+/docs/private/
+
+# Agents instructions
+/AGENTS.md
+/CLAUDE.md
+# Local assets and credentials
+/artifacts/
+/runs/
+/wandb/
+.env
+.env.*
+*.pt
+*.pth
+*.safetensors
+*.twp

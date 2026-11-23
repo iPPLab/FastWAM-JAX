@@ -1,0 +1,39 @@
+# Full RoboTwin training on a single CUDA host with local assets.
+paths:
+  read:
+    video_dit_orbax: "./checkpoints/wan/video_dit"
+    vae_orbax: "./checkpoints/wan/vae"
+    action_dit_init: "./checkpoints/wan/action_init"
+    training_data: "./data/robotwin/twp"
+    dataset_stats: "./data/robotwin/dataset_stats.json"
+    text_embeddings: "./data/robotwin/text"
+  write:
+    runs: "./outputs/runs"
+    jax_cache: "./outputs/jax-cache"
+
+tpu: null
+
+data:
+  task_filter: null
+  action_dim: 14
+  proprio_dim: 14
+  num_output_cameras: 3
+  concat_multi_camera: robotwin
+  action_shift: 0
+  source_color_order: rgb
+
+flow:
+  tau_copies: 1
+  copy_lengths: null
+
+training:
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-2
+  num_epochs: 5
+  steps: null
+  decay_steps: null
+  global_batch_size: 1024
+  micro_batch_size: 8
+  checkpoint:
+    full_every: 200
+    bf16_every: 2500
