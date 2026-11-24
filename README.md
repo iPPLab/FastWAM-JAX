@@ -228,3 +228,6 @@ If you find our repo helpful, please consider citing FastWAM-JAX and the origina
 FastWAM-JAX's own code is available under the [MIT License](LICENSE).
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party terms.
 
+## Acknowledgments
+
+This project was supported in part with Cloud TPUs from Google's TPU Research Cloud (TRC).
